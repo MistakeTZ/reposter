@@ -11,7 +11,7 @@ async def send_menu(user_id, name):
             name, sender.text("no_rights"))
     else:
         await sender.message(user_id, "start_message", kb.table(2,
-            "my_bonds", "bond_list", "add_bond", "add_bond",
+            "crosspost", "bond_list",
             is_keys=True), name, sender.text("menu"))
 
 
@@ -51,10 +51,11 @@ async def send_bond_info(bond_id, user_id, mes_id):
         text = sender.text("no_text")
     
     contacts = sender.text("contacts").split("/")[bond["check_for_contacts"]]
+    sub = sender.text("contacts").split("/")[bond["check_sub"]]
     active = sender.text("status").split("/")[bond["active"]]
 
     await bot.edit_message_text(sender.text("bond", bond["name"], from_chat,
-        to_chat, keywords, text, contacts, active),
+        to_chat, keywords, text, contacts, sub, active),
         chat_id=user_id, message_id=mes_id, reply_markup=kb.bond(bond_id))
 
 

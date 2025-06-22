@@ -327,6 +327,9 @@ async def edited_handler(msg: Message):
 
 
 async def send_caution(msg, key=None):
+    role = await msg.chat.get_member(msg.from_user.id)
+    if role.status == "administrator" or role.status == "creator":
+        return
     user = "@" + msg.from_user.username if msg.from_user.username else hlink(
         msg.from_user.full_name, "tg://user?id=" + str(msg.from_user.id))
     ans = await msg.answer(sender.text("your_message_no_bio", user))
@@ -334,7 +337,7 @@ async def send_caution(msg, key=None):
         key = msg.message_id
     message_to_edit[key] = ans
 
-    await asyncio.sleep(60 * 1)
+    await asyncio.sleep(60 * 10)
     try:
         await ans.delete()
     except Exception as e:

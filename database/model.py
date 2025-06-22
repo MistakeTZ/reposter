@@ -64,6 +64,7 @@ class DB():
                             last_sended integer default -1,
                             active bool default true,
                             check_for_contacts bool default false,
+                            check_sub bool default false,
                             registered timestamp default current_timestamp
                             )""")
         
