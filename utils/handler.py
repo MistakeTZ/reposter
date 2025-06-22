@@ -17,20 +17,6 @@ from database.model import DB
 from .tasks import send_bond_info, add_chat
 
 
-# Установка электронной почты
-@dp.message(UserState.email)
-async def email_check(msg: Message, state: FSMContext):
-    user_id = msg.from_user.id
-    if not msg.entities:
-        await sender.message(user_id, "wrong_email")
-        return
-    email_entity = msg.entities[0]
-    if email_entity.type != "email":
-        await sender.message(user_id, "wrong_email")
-        return
-    email = msg.text[email_entity.offset:email_entity.length]
-
-
 # Добавление пересылки
 @dp.message(UserState.bond)
 async def bond_handler(msg: Message, state: FSMContext):
@@ -134,13 +120,6 @@ async def bond_handler(msg: Message, state: FSMContext):
                 return
 
 
-# Установка телефона
-@dp.message(UserState.phone, F.contact)
-async def phone_check(msg: Message, state: FSMContext):
-    user_id = msg.from_user.id
-    phone = msg.contact.phone_number
-
-
 # Проверка на отсутствие состояний
 class NoStates(Filter):
     async def __call__(self, msg: Message, state: FSMContext):
@@ -168,19 +147,20 @@ async def member_handler(msg: Message, state: FSMContext):
         await state.set_state(UserState.default)
 
 
-# Установка базы данных
-@dp.message(F.document)
-async def set_databse(msg: Message, state: FSMContext):
-    user_id = msg.from_user.id
-    role = DB.get('select role from users where telegram_id = ?', [user_id], True)
-    if not role:
-        return
-    if role[0] != "admin":
-        return
-    
-    doc = msg.document
-    if doc.file_name.split(".")[-1] != "sqlite3":
-        return
-    
-    file = await bot.get_file(doc.file_id)
-    await bot.download_file(file.file_path, path.join("database", "db.sqlite3"))
+# Сообщение без состояний
+@dp.message(NoStates())
+async def no_states(msg: Message):
+    chat_id = msg.chat.id
+    from_chat_bonds = DB.get_dict("select * from bonds where from_chat_id = ?", [chat_id])
+    for bond in from_chat_bonds:
+        try:
+            message_text = msg.text
+            if message_text:
+                if bond["add_text"]:
+                    message_text = message_text + "\n\n" + bond["add_text"]
+                await bot.send_message(bond["to_chat_id"], message_text,
+                                       entities=msg.entities, parse_mode=None)
+        except Exception as e:
+            logging.warning(e)
+            await sender.message(bond["owner"], "cant_send_bond",
+                                None, msg.chat.title, e)
