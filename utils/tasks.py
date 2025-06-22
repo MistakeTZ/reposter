@@ -61,11 +61,12 @@ async def add_chat(chat_id, user_id):
     chat = await bot.get_chat(chat_id)
     in_channels = DB.get("select id from channels where \
                          chat_id = ?", [chat.id], True)
+    title = chat.title or chat.first_name
     if not in_channels:
         DB.commit("insert into channels (chat_id, name, \
                   username, owner) values (?, ?, ?, ?)",
-                  [chat.id, chat.title, chat.username, user_id])
-    return chat.id, chat.title
+                  [chat.id, title, chat.username, user_id])
+    return chat.id, title
 
 
 def check_keywords(text, keywords):
