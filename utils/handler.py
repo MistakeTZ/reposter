@@ -165,7 +165,7 @@ async def no_states(msg: Message, force=False):
                 continue
             message_text = msg.text
             if message_text:
-                if DB.get("select id from forwarded where text like ? and bond_id != ?",
+                if DB.get("select id from forwarded where text like ? and bond_id = ?",
                           [message_text, bond["id"]], True):
                     continue
                 if bond["check_for_contacts"]:
