@@ -12,12 +12,11 @@ import utils.kb as kb
 from states import UserState
 
 
-# Возвращение в меню
-@dp.callback_query(F.data == "back")
+# Мои связки
+@dp.callback_query(F.data == "my_bonds")
 async def menu_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     user_id = clbck.from_user.id
     await sender.edit_message(clbck.message, "menu")
-    await state.set_state(UserState.default)
 
 
 # Начинается с

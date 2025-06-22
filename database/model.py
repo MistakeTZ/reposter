@@ -35,7 +35,18 @@ class DB():
                             name varchar(50) not null,
                             username varchar(50),
                             role varchar(15) not null default 'user',
-                            registered timestamp
+                            registered timestamp default current_timestamp
+                            )""")
+        
+        if not "channels" in tables:
+            logging.info("Creating table channels")
+            cur.execute("""create table channels (
+                            id integer primary key autoincrement,
+                            chat_id bigint not null,
+                            name varchar(50) not null,
+                            username varchar(50),
+                            owner bigint not null,
+                            registered timestamp default current_timestamp
                             )""")
 
         if not "repetitions" in tables:
@@ -61,7 +72,8 @@ class DB():
             else:
                 return cur.fetchall()
         except Exception as e:
-            logging.warning("Prompt " + prompt + " with values " + str(values) + " failed")
+            logging.warning("Prompt " + prompt +
+                            " with values " + str(values) + " failed")
             logging.warning(e)
             return False
 
@@ -70,11 +82,15 @@ class DB():
             cur.execute(prompt, values)
             desc = [row[0] for row in cur.description]
             if one:
-                return dict(zip(desc, cur.fetchone()))
+                res = cur.fetchone()
+                if res is None:
+                    return None
+                return dict(zip(desc, res))
             else:
                 return [dict(zip(desc, res)) for res in cur.fetchall()]
         except Exception as e:
-            logging.warning("Prompt " + prompt + " with values " + str(values) + " failed")
+            logging.warning("Prompt " + prompt +
+                            " with values " + str(values) + " failed")
             logging.warning(e)
             return False
 
@@ -84,7 +100,8 @@ class DB():
             connection.commit()
             return True
         except Exception as e:
-            logging.warning("Prompt " + prompt + " with values " + str(values) + " failed")
+            logging.warning("Prompt " + prompt +
+                            " with values " + str(values) + " failed")
             logging.warning(e)
             return False
 
@@ -94,7 +111,8 @@ class DB():
             connection.commit()
             return True
         except Exception as e:
-            logging.warning("Prompt " + prompt + " with values " + str(values) + " failed")
+            logging.warning("Prompt " + prompt +
+                            " with values " + str(values) + " failed")
             logging.warning(e)
             return False
 
