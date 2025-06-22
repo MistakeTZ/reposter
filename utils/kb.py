@@ -121,3 +121,13 @@ def bond(bond_id) -> InlineKeyboardMarkup:
                    f"edit_contacts_{bond_id}", "set_sub",
                    f"edit_sub_{bond_id}", "set_delete",
                    f"edit_delete_{bond_id}", "back", "menu")
+
+
+def no_sub(link, chat_id, user_id) -> InlineKeyboardMarkup:
+    buttons = [[
+        InlineKeyboardButton(text=sender.text("subscribe"),
+                             url=link),
+        InlineKeyboardButton(text=sender.text("already"),
+                             callback_data=f"sub_{chat_id}_{user_id}")
+    ]]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -3,7 +3,8 @@ from utils import kb
 from loader import bot, sender
 from config import time_difference
 from database.model import DB
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import logging
 
 
 # Отправка запланированных сообщений
@@ -17,6 +18,20 @@ async def send_messages():
         if messages_to_send:
             to_send_tasks = [send_msg(*msg) for msg in messages_to_send]
             await asyncio.gather(*to_send_tasks)
+        
+        promotes = DB.get("select * from promotes where \
+                    registered < ?", [datetime.now(timezone.utc) - timedelta(hours=1)])
+        for promote in promotes:
+            try:
+                if promote[5] == "channel":
+                    await bot.promote_chat_member(promote[2], promote[1], can_post_messages=True)
+                DB.commit("delete from promotes where id = ?", [promote[0]])
+                try:
+                    await bot.delete_message(promote[4], promote[3])
+                except:
+                    pass
+            except Exception as e:
+                logging.warning(e)
 
         await asyncio.sleep(60)
 

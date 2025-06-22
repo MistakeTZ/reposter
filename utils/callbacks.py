@@ -3,8 +3,10 @@ from aiogram.types.callback_query import CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.markdown import hlink
 from loader import dp, bot, sender
+import logging
 import asyncio
 from os import path
+from datetime import datetime, timedelta, timezone
 
 from config import get_env, get_config
 import utils.kb as kb
@@ -96,3 +98,33 @@ async def edit_handler(clbck: CallbackQuery, state: FSMContext) -> None:
             chat["chat_id"], int(bond_id)])
         await state.clear()
         await send_bond_info(bond_id, user_id, clbck.message.message_id)
+
+
+# Проверка подписки
+@dp.callback_query(F.data.startswith("sub_"))
+async def sub_handler(clbck: CallbackQuery, state: FSMContext) -> None:
+    chat_id, user_id = clbck.data.split("_")[1:]
+    if clbck.from_user.id != int(user_id):
+        await clbck.answer(sender.text("not_your_sub"))
+        return
+    try:
+        role_in_to = await bot.get_chat_member(chat_id, clbck.from_user.id)
+        role = role_in_to.status
+        if role == "administrator" or role == "creator" or role == "member":
+            promote = DB.get("select registered from promotes where \
+                user_id = ? and chat_id = ?", [user_id, chat_id], True)
+            if promote:
+                start_ban = datetime.strptime(promote[0], "%Y-%m-%d %H:%M:%S")
+                time_dif = datetime.now().hour - datetime.now(timezone.utc).hour
+                if time_dif < 0:
+                    time_dif += 24
+                promote_time = (start_ban + timedelta(hours=time_dif + 1)).strftime("%X")
+            else:
+                promote_time = "уже доступно"
+
+            await clbck.answer(sender.text("subed", promote_time), show_alert=True)
+            await clbck.message.delete()
+            return
+    except Exception as e:
+        logging.debug(e)
+    await clbck.answer(sender.text("sub_dont"))

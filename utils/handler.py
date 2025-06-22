@@ -10,13 +10,12 @@ from datetime import datetime
 import logging
 
 from os import path
-from config import get_env, get_config, time_difference
 import asyncio
 
 import utils.kb as kb
 from states import UserState
 from database.model import DB
-from .tasks import send_bond_info, add_chat, check_keywords, check_for_contacts
+from .tasks import send_bond_info, add_chat, check_keywords, check_for_contacts, check_sub
 
 media_groups = {}
 message_to_edit = {}
@@ -162,6 +161,8 @@ async def no_states(msg: Message, force=False):
                     from_chat_id = ? and active = 1", [chat_id])
     for bond in from_chat_bonds:
         try:
+            if not await check_sub(msg, bond, msg.chat.type):
+                continue
             message_text = msg.text
             if message_text:
                 if DB.get("select id from forwarded where text like ? and bond_id != ?",

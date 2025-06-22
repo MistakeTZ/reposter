@@ -77,6 +77,18 @@ class DB():
                             mes_id integer not null,
                             registered timestamp default current_timestamp
                             )""")
+        
+        if not "promotes" in tables:
+            logging.info("Creating table promotes")
+            cur.execute("""create table promotes (
+                            id integer primary key autoincrement,
+                            user_id bigint not null,
+                            chat_id bigint not null,
+                            delete_message int not null,
+                            delete_chat int not null,
+                            chat_type varchar(15) not null,
+                            registered timestamp default current_timestamp
+                            )""")
 
         if not "repetitions" in tables:
             logging.info("Creating table repetitions")

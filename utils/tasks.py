@@ -2,6 +2,9 @@ from loader import sender, bot
 from . import kb
 from database.model import DB
 import logging
+from aiogram.utils.markdown import hlink
+from aiogram.types import ChatPermissions
+import time
 
 
 async def send_menu(user_id, name):
@@ -22,7 +25,7 @@ async def edit_menu(user_id, name, mes):
             name, sender.text("no_rights"))
     else:
         await sender.edit_message(mes, "start_message", kb.table(2,
-            "my_bonds", "bond_list", "add_bond", "add_bond",
+            "crosspost", "bond_list",
             is_keys=True), name, sender.text("menu"))
 
 
@@ -93,4 +96,42 @@ def check_for_contacts(text, entities):
     for entity in entities:
         if entity.type in ["text_link", "url", "mention", "phone_number", "email"]:
             return True
+    return False
+
+
+async def check_sub(msg, bond, chat_type):
+    role = await msg.chat.get_member(msg.from_user.id)
+    if role.status == "administrator" or role.status == "creator":
+        return True
+
+    if not bond["check_sub"]:
+        return True
+    try:
+        role_in_to = await bot.get_chat_member(bond["to_chat_id"], msg.from_user.id)
+        role = role_in_to.status
+        if role == "administrator" or role == "creator" or role == "member":
+            return True
+    except Exception as e:
+        logging.debug(e)
+    
+    user = "@" + msg.from_user.username if msg.from_user.username else hlink(
+        msg.from_user.full_name, "tg://user?id=" + str(msg.from_user.id))
+    chat = await bot.get_chat(bond["to_chat_id"])
+    chat_link = hlink(chat.title, "t.me/" + chat.username)
+    mes = await msg.answer(sender.text("no_sub", user, chat_link), reply_markup=kb.no_sub(
+            "t.me/" + chat.username, bond["to_chat_id"], msg.from_user.id))
+    
+    if chat_type == "group" or chat_type == "supergroup":
+        new_perms = ChatPermissions(can_send_messages=False)
+        await bot.restrict_chat_member(msg.chat.id, msg.from_user.id,
+                new_perms, until_date=int(time.time() + 60 * 60))
+    elif chat_type == "channel":
+        await bot.promote_chat_member(msg.chat.id, msg.from_user.id, can_post_messages=False)
+
+    DB.commit("insert into promotes (user_id, chat_id, delete_message, \
+        delete_chat, chat_type) values (?, ?, ?, ?, ?)", [msg.from_user.id,
+        bond["to_chat_id"], mes.message_id, msg.chat.id, chat_type])
+
+    await msg.delete()
+
     return False
