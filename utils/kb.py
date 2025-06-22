@@ -32,7 +32,7 @@ def reply(name) -> ReplyKeyboardMarkup:
 
 
 # Таблица inline кнопок
-def table(width: int, *args) -> InlineKeyboardMarkup:
+def table(width: int, *args, **kwards) -> InlineKeyboardMarkup:
     in_buttons = []
     index = 0
 
@@ -40,8 +40,12 @@ def table(width: int, *args) -> InlineKeyboardMarkup:
         in_buttons.append([])
 
         for _ in range(width):
+            if kwards.get("is_keys", False):
+                text = sender.text(args[index])
+            else:
+                text = args[index]
             in_buttons[-1].append(
-                InlineKeyboardButton(text=args[index],
+                InlineKeyboardButton(text=text,
                                      callback_data=args[index+1]))
             index += 2
             if len(args) == index:
