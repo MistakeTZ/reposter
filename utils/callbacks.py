@@ -76,10 +76,11 @@ async def edit_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         else:
             await clbck.message.edit_text(sender.text(f"write_{action}_no"),
                 reply_markup=kb.buttons(True, "back", "menu"))
-    elif action == "status":
-        bond_status = DB.get("select active from bonds where \
+    elif action in ["status", "contacts"]:
+        field = "active" if action == "status" else "check_for_contacts"
+        bond_status = DB.get(f"select {field} from bonds where \
                         id = ?", [int(bond_id)], True)[0]
-        DB.commit("update bonds set active = ? where \
+        DB.commit(f"update bonds set {field} = ? where \
                         id = ?", [not bond_status, int(bond_id)])
         await send_bond_info(bond_id, user_id, clbck.message.message_id)
     elif action == "delete":

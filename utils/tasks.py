@@ -49,10 +49,11 @@ async def send_bond_info(bond_id, user_id, mes_id):
     else:
         text = sender.text("no_text")
     
+    contacts = sender.text("contacts").split("/")[bond["check_for_contacts"]]
     active = sender.text("status").split("/")[bond["active"]]
 
     await bot.edit_message_text(sender.text("bond", bond["name"], from_chat,
-        to_chat, keywords, text, active),
+        to_chat, keywords, text, contacts, active),
         chat_id=user_id, message_id=mes_id, reply_markup=kb.bond(bond_id))
 
 
@@ -65,3 +66,21 @@ async def add_chat(chat_id, user_id):
                   username, owner) values (?, ?, ?, ?)",
                   [chat.id, chat.title, chat.username, user_id])
     return chat.id, chat.title
+
+
+def check_keywords(text, keywords):
+    if not keywords:
+        return True
+    for key in keywords.split(", "):
+        if key in text:
+            return True
+    return False
+
+
+def check_for_contacts(text, entities):
+    if not entities:
+        return False
+    for entity in entities:
+        if entity.type in ["text_link", "url", "mention", "phone_number", "email"]:
+            return True
+    return False

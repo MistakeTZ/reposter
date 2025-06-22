@@ -63,6 +63,17 @@ class DB():
                             keywords text,
                             last_sended integer default -1,
                             active bool default true,
+                            check_for_contacts bool default false,
+                            registered timestamp default current_timestamp
+                            )""")
+        
+        if not "forwarded" in tables:
+            logging.info("Creating table forwarded")
+            cur.execute("""create table forwarded (
+                            id integer primary key autoincrement,
+                            bond_id integer not null,
+                            text text,
+                            mes_id integer not null,
                             registered timestamp default current_timestamp
                             )""")
 

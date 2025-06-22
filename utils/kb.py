@@ -117,5 +117,6 @@ def bond(bond_id) -> InlineKeyboardMarkup:
                    f"edit_from_{bond_id}", "set_to", f"edit_to_{bond_id}",
                    "set_keywords", f"edit_keywords_{bond_id}", "set_text",
                    f"edit_text_{bond_id}", "set_status",
-                   f"edit_status_{bond_id}", "set_delete",
+                   f"edit_status_{bond_id}", "set_contacts",
+                   f"edit_contacts_{bond_id}", "set_delete",
                    f"edit_delete_{bond_id}", "back", "menu")

@@ -14,7 +14,7 @@ import asyncio
 import utils.kb as kb
 from states import UserState
 from database.model import DB
-from .tasks import send_bond_info, add_chat
+from .tasks import send_bond_info, add_chat, check_keywords, check_for_contacts
 
 
 # Добавление пересылки
@@ -151,15 +151,30 @@ async def member_handler(msg: Message, state: FSMContext):
 @dp.message(NoStates())
 async def no_states(msg: Message):
     chat_id = msg.chat.id
-    from_chat_bonds = DB.get_dict("select * from bonds where from_chat_id = ?", [chat_id])
+    from_chat_bonds = DB.get_dict("select * from bonds where \
+                    from_chat_id = ? and active = 1", [chat_id])
     for bond in from_chat_bonds:
         try:
             message_text = msg.text
             if message_text:
+                if DB.get("select id from forwarded where text like ?",
+                          [message_text], True):
+                    continue
+                if not check_keywords(message_text, bond["keywords"]):
+                    continue
+                if bond["check_for_contacts"]:
+                    if not check_for_contacts(message_text, msg.entities):
+                        continue
+
                 if bond["add_text"]:
-                    message_text = message_text + "\n\n" + bond["add_text"]
-                await bot.send_message(bond["to_chat_id"], message_text,
+                    send_text = message_text + "\n\n" + bond["add_text"]
+                else:
+                    send_text = message_text
+                await bot.send_message(bond["to_chat_id"], send_text,
                                        entities=msg.entities, parse_mode=None)
+                DB.commit("insert into forwarded (bond_id, text, mes_id) \
+                            values (?, ?, ?)", [bond["id"],
+                            message_text, msg.message_id])
         except Exception as e:
             logging.warning(e)
             await sender.message(bond["owner"], "cant_send_bond",
