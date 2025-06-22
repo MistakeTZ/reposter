@@ -19,6 +19,7 @@ from database.model import DB
 from .tasks import send_bond_info, add_chat, check_keywords, check_for_contacts
 
 media_groups = {}
+message_to_edit = {}
 
 
 # Добавление пересылки
@@ -155,7 +156,7 @@ async def member_handler(msg: Message, state: FSMContext):
 
 # Сообщение без состояний
 @dp.message(NoStates())
-async def no_states(msg: Message):
+async def no_states(msg: Message, force=False):
     chat_id = msg.chat.id
     from_chat_bonds = DB.get_dict("select * from bonds where \
                     from_chat_id = ? and active = 1", [chat_id])
@@ -163,14 +164,15 @@ async def no_states(msg: Message):
         try:
             message_text = msg.text
             if message_text:
-                if DB.get("select id from forwarded where text like ?",
-                          [message_text], True):
-                    continue
-                if not check_keywords(message_text, bond["keywords"]):
+                if DB.get("select id from forwarded where text like ? and bond_id != ?",
+                          [message_text, bond["id"]], True):
                     continue
                 if bond["check_for_contacts"]:
                     if not check_for_contacts(message_text, msg.entities):
+                        await send_caution(msg)
                         continue
+                if not check_keywords(message_text, bond["keywords"]):
+                    continue
 
                 if bond["add_text"]:
                     send_text = message_text + "\n\n" + bond["add_text"]
@@ -186,20 +188,23 @@ async def no_states(msg: Message):
                 if msg.media_group_id:
                     if msg.media_group_id in media_groups:
                         media_groups[msg.media_group_id].append(msg)
+                        if force:
+                            await send_media_group(msg.media_group_id, bond)
                         continue
                     else:
                         media_groups[msg.media_group_id] = [msg]
                         await asyncio.sleep(1)
                         await send_media_group(msg.media_group_id, bond)
                         continue
-                if DB.get("select id from forwarded where text like ?",
-                          [msg.caption], True):
-                    continue
-                if not check_keywords(msg.caption, bond["keywords"]):
+                if DB.get("select id from forwarded where text like ? and bond_id != ?",
+                          [msg.caption, bond["id"]], True):
                     continue
                 if bond["check_for_contacts"]:
                     if not check_for_contacts(msg.caption, msg.caption_entities):
+                        await send_caution(msg)
                         continue
+                if not check_keywords(msg.caption, bond["keywords"]):
+                    continue
 
                 if bond["add_text"]:
                     send_text = msg.caption + "\n\n" + bond["add_text"]
@@ -231,7 +236,10 @@ async def no_states(msg: Message):
                         await asyncio.sleep(1)
                         await send_media_group(msg.media_group_id, bond)
                         continue
-                if bond["check_for_contacts"] or bond["keywords"]:
+                if bond["check_for_contacts"]:
+                    await send_caution(msg)
+                    continue
+                if bond["keywords"]:
                     continue
                 if msg.photo:
                     await bot.send_photo(bond["to_chat_id"], msg.photo[-1].file_id,
@@ -264,12 +272,16 @@ async def send_media_group(media_group_id, bond):
             entities = message.caption_entities
     
     if not text:
-        if bond["check_for_contacts"] or bond["keywords"]:
+        if bond["check_for_contacts"]:
+            await send_caution(group[0], media_group_id)
+            return
+        if not bond["keywords"]:
             return
         text = bond["add_text"]
     else:
         if bond["check_for_contacts"]:
             if not check_for_contacts(text, entities):
+                await send_caution(group[0], media_group_id)
                 return
         if not check_keywords(text, bond["keywords"]):
             return
@@ -289,3 +301,52 @@ async def send_media_group(media_group_id, bond):
     media[-1].caption_entities = entities
     media[-1].parse_mode = None
     await bot.send_media_group(bond["to_chat_id"], media)
+
+
+@dp.edited_message()
+async def edited_handler(msg: Message):
+    if message_to_edit.get(msg.message_id, None):
+        try:
+            await message_to_edit[msg.message_id].delete()
+        except Exception as e:
+            logging.warning(e)
+        del message_to_edit[msg.message_id]
+        await no_states(msg)
+    elif message_to_edit.get(msg.media_group_id, None):
+        try:
+            await message_to_edit[msg.media_group_id].delete()
+        except Exception as e:
+            logging.warning(e)
+        del message_to_edit[msg.media_group_id]
+
+        for message in media_groups[msg.media_group_id]:
+            if message.message_id == msg.message_id:
+                media_groups[msg.media_group_id].remove(message)
+                break
+        await no_states(msg, force=True)
+
+
+async def send_caution(msg, key=None):
+    user = "@" + msg.from_user.username if msg.from_user.username else hlink(
+        msg.from_user.full_name, "tg://user?id=" + str(msg.from_user.id))
+    ans = await msg.answer(sender.text("your_message_no_bio", user))
+    if not key:
+        key = msg.message_id
+    message_to_edit[key] = ans
+
+    await asyncio.sleep(60 * 1)
+    try:
+        await ans.delete()
+    except Exception as e:
+        logging.warning(e)
+    try:
+        if msg.media_group_id:
+            for message in media_groups[msg.media_group_id]:
+                try:
+                    await message.delete()
+                except Exception as e:
+                    logging.warning(e)
+        else:
+            await msg.delete()
+    except Exception as e:
+        logging.warning(e)
