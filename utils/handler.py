@@ -1,6 +1,8 @@
 from aiogram import F
 from aiogram.filters import Filter
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import (
+    Message, InputMediaPhoto, InputMediaVideo,
+    InputMediaDocument, InputMediaAudio)
 from aiogram.utils.markdown import hlink
 from aiogram.fsm.context import FSMContext
 from loader import dp, bot, sender
@@ -15,6 +17,8 @@ import utils.kb as kb
 from states import UserState
 from database.model import DB
 from .tasks import send_bond_info, add_chat, check_keywords, check_for_contacts
+
+media_groups = {}
 
 
 # Добавление пересылки
@@ -175,7 +179,111 @@ async def no_states(msg: Message):
                 DB.commit("insert into forwarded (bond_id, text, mes_id) \
                             values (?, ?, ?)", [bond["id"],
                             message_text, msg.message_id])
+
+            elif msg.caption:
+                if msg.media_group_id:
+                    if msg.media_group_id in media_groups:
+                        media_groups[msg.media_group_id].append(msg)
+                        continue
+                    else:
+                        media_groups[msg.media_group_id] = [msg]
+                        await asyncio.sleep(1)
+                        await send_media_group(msg.media_group_id, bond)
+                        continue
+                if DB.get("select id from forwarded where text like ?",
+                          [msg.caption], True):
+                    continue
+                if not check_keywords(msg.caption, bond["keywords"]):
+                    continue
+                if bond["check_for_contacts"]:
+                    if not check_for_contacts(msg.caption, msg.caption_entities):
+                        continue
+
+                if bond["add_text"]:
+                    send_text = msg.caption + "\n\n" + bond["add_text"]
+                else:
+                    send_text = msg.caption
+                if msg.photo:
+                    await bot.send_photo(bond["to_chat_id"], msg.photo[-1].file_id,
+                                        caption=send_text, parse_mode=None)
+                elif msg.video:
+                    await bot.send_video(bond["to_chat_id"], msg.video.file_id,
+                                        caption=send_text, parse_mode=None)
+                elif msg.document:
+                    await bot.send_document(bond["to_chat_id"], msg.document.file_id,
+                                            caption=send_text, parse_mode=None)
+                elif msg.audio:
+                    await bot.send_audio(bond["to_chat_id"], msg.audio.file_id,
+                                        caption=send_text, parse_mode=None)
+                DB.commit("insert into forwarded (bond_id, text, mes_id) \
+                            values (?, ?, ?)", [bond["id"],
+                            msg.caption, msg.message_id])
+
+            else:
+                if msg.media_group_id:
+                    if msg.media_group_id in media_groups:
+                        media_groups[msg.media_group_id].append(msg)
+                        continue
+                    else:
+                        media_groups[msg.media_group_id] = [msg]
+                        await asyncio.sleep(1)
+                        await send_media_group(msg.media_group_id, bond)
+                        continue
+                if bond["check_for_contacts"] or bond["keywords"]:
+                    continue
+                if msg.photo:
+                    await bot.send_photo(bond["to_chat_id"], msg.photo[-1].file_id,
+                                        caption=bond["add_text"])
+                elif msg.video:
+                    await bot.send_video(bond["to_chat_id"], msg.video.file_id,
+                                        caption=bond["add_text"])
+                elif msg.document:
+                    await bot.send_document(bond["to_chat_id"], msg.document.file_id,
+                                            caption=bond["add_text"])
+                elif msg.audio:
+                    await bot.send_audio(bond["to_chat_id"], msg.audio.file_id,
+                                        caption=bond["add_text"])
+                DB.commit("insert into forwarded (bond_id, mes_id) \
+                            values (?, ?)", [bond["id"], msg.message_id])
         except Exception as e:
             logging.warning(e)
             await sender.message(bond["owner"], "cant_send_bond",
                                 None, msg.chat.title, e)
+
+
+async def send_media_group(media_group_id, bond):
+    group = media_groups[media_group_id]
+    media = []
+    text = ""
+    entities = None
+    for message in group:
+        if message.caption:
+            text = message.caption
+            entities = message.caption_entities
+    
+    if not text:
+        if bond["check_for_contacts"] or bond["keywords"]:
+            return
+        text = bond["add_text"]
+    else:
+        if bond["check_for_contacts"]:
+            if not check_for_contacts(text, entities):
+                return
+        if not check_keywords(text, bond["keywords"]):
+            return
+        if bond["add_text"]:
+            text = text + "\n\n" + bond["add_text"]
+
+    for message in group:
+        if message.photo:
+            media.append(InputMediaPhoto(media=message.photo[-1].file_id))
+        elif message.video:
+            media.append(InputMediaVideo(media=message.video.file_id))
+        elif message.document:
+            media.append(InputMediaDocument(media=message.document.file_id))
+        elif message.audio:
+            media.append(InputMediaAudio(media=message.audio.file_id))
+    media[-1].caption = text
+    media[-1].caption_entities = entities
+    media[-1].parse_mode = None
+    await bot.send_media_group(bond["to_chat_id"], media)
