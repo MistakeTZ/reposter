@@ -98,3 +98,24 @@ def phone() -> ReplyKeyboardMarkup:
 def link(text, url) -> InlineKeyboardMarkup:
     in_buttons = [[InlineKeyboardButton(text=text, url=url)]]
     return InlineKeyboardMarkup(inline_keyboard=in_buttons)
+
+
+# Клавиатура связок
+def bonds(bonds) -> InlineKeyboardMarkup:
+    button_list = []
+    for bond in bonds:
+        button_list.append([InlineKeyboardButton(text=bond[1],
+                                callback_data=f"bond_{bond[0]}")])
+    button_list.append([InlineKeyboardButton(text=sender.text("add_bond"), callback_data="add_bond"),
+                        InlineKeyboardButton(text=sender.text("back"), callback_data="menu")])
+    return InlineKeyboardMarkup(inline_keyboard=button_list)
+
+
+# Клавиатура связки
+def bond(bond_id) -> InlineKeyboardMarkup:
+    return buttons(True, "set_name", f"edit_name_{bond_id}", "set_from",
+                   f"edit_from_{bond_id}", "set_to", f"edit_to_{bond_id}",
+                   "set_keywords", f"edit_keywords_{bond_id}", "set_text",
+                   f"edit_text_{bond_id}", "set_status",
+                   f"edit_status_{bond_id}", "set_delete",
+                   f"edit_delete_{bond_id}", "back", "menu")

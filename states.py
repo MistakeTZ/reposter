@@ -9,3 +9,4 @@ class UserState(StatesGroup):
     phone = State()
     time = State()
     mailing = State()
+    bond = State()

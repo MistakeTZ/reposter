@@ -48,6 +48,21 @@ class DB():
                             owner bigint not null,
                             registered timestamp default current_timestamp
                             )""")
+        
+        if not "bonds" in tables:
+            logging.info("Creating table bonds")
+            cur.execute("""create table bonds (
+                            id integer primary key autoincrement,
+                            name varchar(50) not null,
+                            owner bigint not null,
+                            from_chat_id bigint,
+                            to_chat_id bigint,
+                            add_text text,
+                            keywords text,
+                            last_sended integer default -1,
+                            active bool default true,
+                            registered timestamp default current_timestamp
+                            )""")
 
         if not "repetitions" in tables:
             logging.info("Creating table repetitions")

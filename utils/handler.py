@@ -5,6 +5,7 @@ from aiogram.utils.markdown import hlink
 from aiogram.fsm.context import FSMContext
 from loader import dp, bot, sender
 from datetime import datetime
+import logging
 
 from os import path
 from config import get_env, get_config, time_difference
@@ -13,6 +14,7 @@ import asyncio
 import utils.kb as kb
 from states import UserState
 from database.model import DB
+from .tasks import send_bond_info
 
 
 # Установка электронной почты
@@ -29,15 +31,42 @@ async def email_check(msg: Message, state: FSMContext):
     email = msg.text[email_entity.offset:email_entity.length]
 
 
-# Установка времени
-@dp.message(UserState.time)
-async def time_check(msg: Message, state: FSMContext):
+# Добавление пересылки
+@dp.message(UserState.bond)
+async def bond_handler(msg: Message, state: FSMContext):
     user_id = msg.from_user.id
-    try:
-        time = datetime.strptime(msg.text, "%H:%M")
-    except ValueError:
-        await sender.message(user_id, "wrong_time")
-        return
+    data = await state.get_data()
+    status = data.get("state", None)
+    bond_id = data.get("id", None)
+    start_mes_id = data.get("start_mes_id", None)
+
+    match status:
+        case "name":
+            try:
+                name = msg.text
+                if len(name) > 50:
+                    raise ValueError("Too long name")
+                if bond_id is None:
+                    if not DB.get("select id from \
+                                bonds where name = ?", [name], True):
+                        DB.commit("insert into bonds (name, \
+                                owner) values (?, ?)", [name, user_id])
+                    bond_id = DB.get("select id from bonds \
+                                where name = ?", [name], True)[0]
+                else:
+                    DB.commit("update bonds set name = ? where id = ?",
+                              [name, bond_id])
+                await msg.delete()
+                await send_bond_info(bond_id, user_id, start_mes_id)
+            except Exception as e:
+                logging.debug(e)
+                try:
+                    await msg.delete()
+                except: pass
+                await bot.edit_message_text(sender.text("wrong_name"),
+                    chat_id=user_id, message_id=start_mes_id,
+                    reply_markup=kb.buttons(True, "back", "menu"))
+                return
 
 
 # Установка телефона
