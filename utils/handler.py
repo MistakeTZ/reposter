@@ -101,6 +101,8 @@ async def bond_handler(msg: Message, state: FSMContext):
                 chat_id = msg.text
                 await msg.delete()
                 try:
+                    if msg.from_user.username in chat_id:
+                        chat_id = msg.from_user.id
                     chat_id, chat_name = await add_chat(chat_id, user_id)
                 except Exception as e:
                     logging.debug(e)

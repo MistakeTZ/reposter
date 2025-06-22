@@ -1,6 +1,7 @@
 from loader import sender, bot
 from . import kb
 from database.model import DB
+import logging
 
 
 async def send_menu(user_id, name):
@@ -58,10 +59,17 @@ async def send_bond_info(bond_id, user_id, mes_id):
 
 
 async def add_chat(chat_id, user_id):
-    chat = await bot.get_chat(chat_id)
+    try:
+        mes = await bot.send_message(chat_id, "Добавление чата...")
+        await mes.delete()
+        chat = mes.chat
+        title = chat.first_name
+    except Exception as e:
+        logging.debug(e)
+        chat = await bot.get_chat(chat_id)
+        title = chat.title
     in_channels = DB.get("select id from channels where \
                          chat_id = ?", [chat.id], True)
-    title = chat.title or chat.first_name
     if not in_channels:
         DB.commit("insert into channels (chat_id, name, \
                   username, owner) values (?, ?, ?, ?)",
