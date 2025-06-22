@@ -29,17 +29,13 @@ async def send_bond_info(bond_id, user_id, mes_id):
     bond = DB.get_dict("select * from bonds where id = ?", [bond_id], True)
     if not bond:
         return
-    from_chat = DB.get("select name from channels where chat_id = ?",
-                          [bond["from_chat_id"]], True)
-    if from_chat:
-        from_chat = from_chat[0]
+    if bond["from_chat_name"]:
+        from_chat = bond["from_chat_name"]
     else:
         from_chat = sender.text("not_set_yet")
     
-    to_chat = DB.get("select name from channels where chat_id = ?",
-                          [bond["to_chat_id"]], True)
-    if to_chat:
-        to_chat = to_chat[0]
+    if bond["to_chat_name"]:
+        to_chat = bond["to_chat_name"]
     else:
         to_chat = sender.text("not_set_yet")
     
@@ -58,3 +54,14 @@ async def send_bond_info(bond_id, user_id, mes_id):
     await bot.edit_message_text(sender.text("bond", bond["name"], from_chat,
         to_chat, keywords, text, active),
         chat_id=user_id, message_id=mes_id, reply_markup=kb.bond(bond_id))
+
+
+async def add_chat(chat_id, user_id):
+    chat = await bot.get_chat(chat_id)
+    in_channels = DB.get("select id from channels where \
+                         chat_id = ?", [chat.id], True)
+    if not in_channels:
+        DB.commit("insert into channels (chat_id, name, \
+                  username, owner) values (?, ?, ?, ?)",
+                  [chat.id, chat.title, chat.username, user_id])
+    return chat.id, chat.title

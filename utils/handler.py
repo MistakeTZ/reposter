@@ -14,7 +14,7 @@ import asyncio
 import utils.kb as kb
 from states import UserState
 from database.model import DB
-from .tasks import send_bond_info
+from .tasks import send_bond_info, add_chat
 
 
 # Установка электронной почты
@@ -64,6 +64,71 @@ async def bond_handler(msg: Message, state: FSMContext):
                     await msg.delete()
                 except: pass
                 await bot.edit_message_text(sender.text("wrong_name"),
+                    chat_id=user_id, message_id=start_mes_id,
+                    reply_markup=kb.buttons(True, "back", "menu"))
+                return
+        
+        case "text":
+            try:
+                text = msg.text
+                if text.lower() == "нет":
+                    text = None
+                DB.commit("update bonds set add_text = ? where id = ?",
+                          [text, bond_id])
+                await msg.delete()
+                await send_bond_info(bond_id, user_id, start_mes_id)
+            except Exception as e:
+                logging.debug(e)
+                try:
+                    await msg.delete()
+                except: pass
+                await bot.edit_message_text(sender.text("wrong_add_text"),
+                    chat_id=user_id, message_id=start_mes_id,
+                    reply_markup=kb.buttons(True, "back", "menu"))
+                return
+        
+        case "keywords":
+            try:
+                keywords = msg.text
+                if keywords.lower() == "нет":
+                    keywords = None
+                DB.commit("update bonds set keywords = ? where id = ?",
+                          [keywords, bond_id])
+                await msg.delete()
+                await send_bond_info(bond_id, user_id, start_mes_id)
+            except Exception as e:
+                logging.debug(e)
+                try:
+                    await msg.delete()
+                except: pass
+                await bot.edit_message_text(sender.text("wrong_keywords"),
+                    chat_id=user_id, message_id=start_mes_id,
+                    reply_markup=kb.buttons(True, "back", "menu"))
+                return
+        
+        case "from" | "to":
+            try:
+                chat_id = msg.text
+                await msg.delete()
+                try:
+                    chat_id, chat_name = await add_chat(chat_id, user_id)
+                except Exception as e:
+                    logging.debug(e)
+                    await bot.edit_message_text(sender.text("bot_not_in_chat"),
+                        chat_id=user_id, message_id=start_mes_id,
+                        reply_markup=kb.buttons(True, "back", "menu"))
+                    return
+
+                DB.commit(f"update bonds set {status}_chat_name = ?, \
+                        {status}_chat_id = ? where id = ?", [chat_name,
+                        chat_id, bond_id])
+                await send_bond_info(bond_id, user_id, start_mes_id)
+            except Exception as e:
+                logging.debug(e)
+                try:
+                    await msg.delete()
+                except: pass
+                await bot.edit_message_text(sender.text("wrong_from"),
                     chat_id=user_id, message_id=start_mes_id,
                     reply_markup=kb.buttons(True, "back", "menu"))
                 return

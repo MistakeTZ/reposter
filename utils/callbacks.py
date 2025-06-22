@@ -49,3 +49,49 @@ async def bond_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     user_id = clbck.from_user.id
     bond_id = clbck.data.split("_")[1]
     await send_bond_info(bond_id, user_id, clbck.message.message_id)
+
+
+# Изменение связки
+@dp.callback_query(F.data.startswith("edit_"))
+async def edit_handler(clbck: CallbackQuery, state: FSMContext) -> None:
+    user_id = clbck.from_user.id
+    _, action, bond_id = clbck.data.split("_")
+    await state.set_state(UserState.bond)
+    data = await state.get_data()
+    await state.set_data({"state": action, "id": bond_id,
+                    "start_mes_id": clbck.message.message_id})
+
+    if action in ["text", "keywords", "name"]:
+        await clbck.message.edit_text(sender.text(f"write_{action}"),
+                        reply_markup=kb.buttons(True, "back", "menu"))
+    elif action in ["from", "to"]:
+        chats = DB.get_dict("select * from channels where owner = ?", [user_id])
+        if chats:
+            chat_data = []
+            for chat in chats:
+                chat_data.extend([chat["name"], 
+                                f"edit_id{chat['id']}_{bond_id}"])
+            await clbck.message.edit_text(sender.text(f"write_{action}_ex"),
+                reply_markup=kb.buttons(False, *chat_data, sender.text("back"), "menu"))
+        else:
+            await clbck.message.edit_text(sender.text(f"write_{action}_no"),
+                reply_markup=kb.buttons(True, "back", "menu"))
+    elif action == "status":
+        bond_status = DB.get("select active from bonds where \
+                        id = ?", [int(bond_id)], True)[0]
+        DB.commit("update bonds set active = ? where \
+                        id = ?", [not bond_status, int(bond_id)])
+        await send_bond_info(bond_id, user_id, clbck.message.message_id)
+    elif action == "delete":
+        DB.commit("delete from bonds where id = ?", [int(bond_id)])
+        await edit_menu(user_id, clbck.from_user.first_name, clbck.message)
+    elif action.startswith("id"):
+        channel_id = int(action[2:])
+        chat = DB.get_dict("select * from channels where id = ?",
+                           [channel_id], True)
+        action = data["state"]
+        DB.commit(f"update bonds set {action}_chat_name = ?, \
+            {action}_chat_id = ? where id = ?", [chat["name"],
+            chat["chat_id"], int(bond_id)])
+        await state.clear()
+        await send_bond_info(bond_id, user_id, clbck.message.message_id)

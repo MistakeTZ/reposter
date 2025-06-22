@@ -57,6 +57,8 @@ class DB():
                             owner bigint not null,
                             from_chat_id bigint,
                             to_chat_id bigint,
+                            from_chat_name text,
+                            to_chat_name text,
                             add_text text,
                             keywords text,
                             last_sended integer default -1,
