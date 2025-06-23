@@ -173,8 +173,8 @@ async def no_states(msg: Message, force=False):
             await check_to_edit(user_id)
             message_text = msg.text
             if message_text:
-                if DB.get("select id from forwarded where text like ? and bond_id = ?",
-                          [message_text, bond["id"]], True): # TODO check forwarded
+                if DB.get("select id from forwarded where text like ? and to_chat = ?",
+                          [message_text, bond["to_chat_id"]], True):
                     continue
                 if bond["check_for_contacts"]:
                     if not check_for_contacts(message_text, msg.entities):
@@ -190,9 +190,10 @@ async def no_states(msg: Message, force=False):
                 await bot.send_message(bond["to_chat_id"], send_text,
                                        entities=msg.entities, parse_mode=None,
                                        disable_notification=bond["silence"])
-                DB.commit("insert into forwarded (bond_id, text, mes_id, user_id, chat_id) \
-                            values (?, ?, ?, ?, ?)", [bond["id"],
-                            message_text, msg.message_id, user_id, chat_id])
+                DB.commit("insert into forwarded (bond_id, text, mes_id, \
+                    user_id, chat_id, to_chat) values (?, ?, ?, ?, ?, ?)",
+                    [bond["id"], message_text, msg.message_id, user_id,
+                    chat_id, bond["to_chat_id"]])
 
             elif msg.caption:
                 if msg.media_group_id:
@@ -236,9 +237,10 @@ async def no_states(msg: Message, force=False):
                     await bot.send_audio(bond["to_chat_id"], msg.audio.file_id,
                                         caption=send_text, parse_mode=None,
                                         disable_notification=bond["silence"])
-                DB.commit("insert into forwarded (bond_id, text, mes_id, user_id, chat_id) \
-                            values (?, ?, ?, ?, ?)", [bond["id"],
-                            msg.caption, msg.message_id, user_id, chat_id])
+                DB.commit("insert into forwarded (bond_id, text, mes_id, \
+                    user_id, chat_id, to_chat) values (?, ?, ?, ?, ?, ?)",
+                    [bond["id"], msg.caption, msg.message_id, user_id,
+                    chat_id, bond["to_chat_id"]])
 
             else:
                 if msg.media_group_id:
@@ -271,8 +273,9 @@ async def no_states(msg: Message, force=False):
                     await bot.send_audio(bond["to_chat_id"], msg.audio.file_id,
                                         caption=bond["add_text"],
                                         disable_notification=bond["silence"])
-                DB.commit("insert into forwarded (bond_id, mes_id, user_id, chat_id) \
-                            values (?, ?)", [bond["id"], msg.message_id, user_id, chat_id])
+                DB.commit("insert into forwarded (bond_id, mes_id, user_id, \
+                    chat_id, to_chat) values (?, ?, ?, ?, ?)", [bond["id"],
+                    msg.message_id, user_id, chat_id, bond["to_chat_id"]])
         except Exception as e:
             logging.warning(e)
             await sender.message(bond["owner"], "cant_send_bond",
