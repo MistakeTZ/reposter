@@ -108,24 +108,23 @@ async def check_sub(msg, bond, chat_type):
     except Exception as e:
         logging.debug(e)
     
-    user = "@" + msg.from_user.username if msg.from_user.username else hlink(
-        msg.from_user.full_name, "tg://user?id=" + str(msg.from_user.id))
-    chat = await bot.get_chat(bond["to_chat_id"])
-    chat_link = hlink(chat.title, "t.me/" + chat.username)
-    mes = await msg.answer(sender.text("no_sub", user, chat_link), reply_markup=kb.no_sub(
-            "t.me/" + chat.username, bond["to_chat_id"], msg.from_user.id))
+    prev = DB.get("select id from promotes where user_id = ? and chat_id = ?",
+        [msg.from_user.id, bond["to_chat_id"]], True)
     
-    if chat_type == "group" or chat_type == "supergroup":
-        new_perms = ChatPermissions(can_send_messages=False)
-        await bot.restrict_chat_member(msg.chat.id, msg.from_user.id,
-                new_perms, until_date=int(time.time() + 60 * 60))
-    elif chat_type == "channel":
-        await bot.promote_chat_member(msg.chat.id, msg.from_user.id, can_post_messages=False)
+    if not prev:
+        user = "@" + msg.from_user.username if msg.from_user.username else hlink(
+            msg.from_user.full_name, "tg://user?id=" + str(msg.from_user.id))
+        chat = await bot.get_chat(bond["to_chat_id"])
+        chat_link = hlink(chat.title, "t.me/" + chat.username)
+        mes = await msg.answer(sender.text("no_sub", user, chat_link), reply_markup=kb.no_sub(
+                "t.me/" + chat.username, bond["to_chat_id"], msg.from_user.id))
 
-    DB.commit("insert into promotes (user_id, chat_id, delete_message, \
-        delete_chat, chat_type) values (?, ?, ?, ?, ?)", [msg.from_user.id,
-        bond["to_chat_id"], mes.message_id, msg.chat.id, chat_type])
+        DB.commit("insert into promotes (user_id, chat_id, delete_message, \
+            delete_chat, chat_type) values (?, ?, ?, ?, ?)", [msg.from_user.id,
+            bond["to_chat_id"], mes.message_id, msg.chat.id, chat_type])
 
-    await msg.delete()
+    try:
+        await msg.delete()
+    except: pass
 
     return False

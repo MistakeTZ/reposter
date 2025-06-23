@@ -68,6 +68,19 @@ class DB():
                             check_sub bool default false,
                             registered timestamp default current_timestamp
                             )""")
+
+        if not "stats" in tables:
+            logging.info("Creating table stats")
+            cur.execute("""create table stats (
+                            id integer primary key autoincrement,
+                            bond_id integer not null,
+                            today_sub integer default 0,
+                            today_fwd integer default 0,
+                            total_sub integer default 0,
+                            total_fwd integer default 0,
+                            last_updated timestamp default current_timestamp,
+                            registered timestamp default current_timestamp
+                            )""")
         
         if not "forwarded" in tables:
             logging.info("Creating table forwarded")
@@ -88,6 +101,7 @@ class DB():
                             delete_message int not null,
                             delete_chat int not null,
                             chat_type varchar(15) not null,
+                            promote bool default false,
                             registered timestamp default current_timestamp
                             )""")
 

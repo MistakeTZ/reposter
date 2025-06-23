@@ -112,18 +112,12 @@ async def sub_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         role_in_to = await bot.get_chat_member(chat_id, clbck.from_user.id)
         role = role_in_to.status
         if role == "administrator" or role == "creator" or role == "member":
-            promote = DB.get("select registered from promotes where \
+            promote = DB.get("select id from promotes where \
                 user_id = ? and chat_id = ?", [user_id, chat_id], True)
             if promote:
-                start_ban = datetime.strptime(promote[0], "%Y-%m-%d %H:%M:%S")
-                time_dif = datetime.now().hour - datetime.now(timezone.utc).hour
-                if time_dif < 0:
-                    time_dif += 24
-                promote_time = (start_ban + timedelta(hours=time_dif + 1)).strftime("%X")
-            else:
-                promote_time = "уже доступно"
+                DB.commit("delete from promotes where id = ?", [promote[0]])
 
-            await clbck.answer(sender.text("subed", promote_time), show_alert=True)
+            await clbck.answer(sender.text("subed"), show_alert=True)
             await clbck.message.delete()
             return
     except Exception as e:

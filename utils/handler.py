@@ -43,6 +43,7 @@ async def bond_handler(msg: Message, state: FSMContext):
                                 owner) values (?, ?)", [name, user_id])
                     bond_id = DB.get("select id from bonds \
                                 where name = ?", [name], True)[0]
+                    DB.commit("insert into stats (bond_id) values (?)", [bond_id])
                 else:
                     DB.commit("update bonds set name = ? where id = ?",
                               [name, bond_id])
@@ -170,7 +171,7 @@ async def no_states(msg: Message, force=False):
             message_text = msg.text
             if message_text:
                 if DB.get("select id from forwarded where text like ? and bond_id = ?",
-                          [message_text, bond["id"]], True):
+                          [message_text, bond["id"]], True): # TODO check forwarded
                     continue
                 if bond["check_for_contacts"]:
                     if not check_for_contacts(message_text, msg.entities):

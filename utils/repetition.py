@@ -4,7 +4,9 @@ from loader import bot, sender
 from config import time_difference
 from database.model import DB
 from datetime import datetime, timedelta, timezone
+from aiogram.types import ChatPermissions
 import logging
+from time import time
 
 
 # Отправка запланированных сообщений
@@ -20,12 +22,26 @@ async def send_messages():
             await asyncio.gather(*to_send_tasks)
         
         promotes = DB.get("select * from promotes where \
-                    registered < ?", [datetime.now(timezone.utc) - timedelta(hours=1)])
+                    registered < ?", [datetime.now(timezone.utc) - timedelta(hours=1, minutes=10)])
         for promote in promotes:
             try:
                 if promote[5] == "channel":
                     await bot.promote_chat_member(promote[2], promote[1], can_post_messages=True)
                 DB.commit("delete from promotes where id = ?", [promote[0]])
+            except Exception as e:
+                logging.warning(e)
+        
+        promotes = DB.get("select * from promotes where registered < ? and promote = 0",
+                          [datetime.now(timezone.utc) - timedelta(minutes=10)])
+        for promote in promotes:
+            try:
+                if promote[5] == "group" or promote[5] == "supergroup":
+                    new_perms = ChatPermissions(can_send_messages=False)
+                    await bot.restrict_chat_member(promote[2], promote[1],
+                            new_perms, until_date=int(time() + 60 * 60))
+                if promote[5] == "channel":
+                    await bot.promote_chat_member(promote[2], promote[1], can_post_messages=False)
+                DB.commit("update promotes set promote = 1 where id = ?", [promote[0]])
                 try:
                     await bot.delete_message(promote[4], promote[3])
                 except:
