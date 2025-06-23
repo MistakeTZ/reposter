@@ -4,6 +4,7 @@ from aiogram.fsm.context import FSMContext
 from loader import dp, bot, sender
 from os import path
 from datetime import datetime
+import logging
 
 from utils.tasks import send_menu
 from config import get_env, get_config
@@ -35,8 +36,10 @@ async def command_start_handler(msg: Message, state: FSMContext) -> None:
             await send_bond_info(bond_id, user_id, message)
             return
 
-    if not DB.get("select id from users where telegram_id = ?", [user_id]):
-        print("New user:", user_id)
+    role = DB.get("select role from users \
+        where telegram_id = ?", [user_id], True)
+    if not role:
+        logging.info("New user:", user_id)
         DB.commit("insert into users (telegram_id, name, username, registered) values (?, ?, ?, ?)", 
                   [user_id, msg.from_user.full_name, msg.from_user.username, datetime.now()])
         if str(user_id) in get_env("admins"):
