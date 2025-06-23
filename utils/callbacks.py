@@ -112,10 +112,12 @@ async def sub_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         role_in_to = await bot.get_chat_member(chat_id, clbck.from_user.id)
         role = role_in_to.status
         if role == "administrator" or role == "creator" or role == "member":
-            promote = DB.get("select id from promotes where \
+            promote = DB.get("select id, bond_id from promotes where \
                 user_id = ? and chat_id = ?", [user_id, chat_id], True)
             if promote:
                 DB.commit("delete from promotes where id = ?", [promote[0]])
+                DB.commit("update stats set today_sub = today_sub + 1, \
+                          total_sub = total_sub + 1 where id = ?", [promote[1]])
 
             await clbck.answer(sender.text("subed"), show_alert=True)
             await clbck.message.delete()

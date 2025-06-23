@@ -21,13 +21,15 @@ async def send_messages():
             to_send_tasks = [send_msg(*msg) for msg in messages_to_send]
             await asyncio.gather(*to_send_tasks)
         
-        promotes = DB.get("select * from promotes where \
+        promotes = DB.get_dict("select * from promotes where \
                     registered < ?", [datetime.now(timezone.utc) - timedelta(hours=1, minutes=10)])
         for promote in promotes:
             try:
-                if promote[5] == "channel":
-                    await bot.promote_chat_member(promote[2], promote[1], can_post_messages=True)
-                DB.commit("delete from promotes where id = ?", [promote[0]])
+                try:
+                    await bot.promote_chat_member(promote["chat_id"],
+                                    promote["user_id"], can_post_messages=True)
+                except: pass
+                DB.commit("delete from promotes where id = ?", [promote["id"]])
             except Exception as e:
                 logging.warning(e)
         
@@ -35,15 +37,17 @@ async def send_messages():
                           [datetime.now(timezone.utc) - timedelta(minutes=10)])
         for promote in promotes:
             try:
-                if promote[5] == "group" or promote[5] == "supergroup":
-                    new_perms = ChatPermissions(can_send_messages=False)
-                    await bot.restrict_chat_member(promote[2], promote[1],
-                            new_perms, until_date=int(time() + 60 * 60))
-                if promote[5] == "channel":
-                    await bot.promote_chat_member(promote[2], promote[1], can_post_messages=False)
-                DB.commit("update promotes set promote = 1 where id = ?", [promote[0]])
                 try:
-                    await bot.delete_message(promote[4], promote[3])
+                    new_perms = ChatPermissions(can_send_messages=False)
+                    await bot.restrict_chat_member(promote["chat_id"], promote["user_id"],
+                            new_perms, until_date=int(time() + 60 * 60))
+                except: pass
+                try:
+                    await bot.promote_chat_member(promote["chat_id"], promote["user_id"], can_post_messages=False)
+                except: pass
+                DB.commit("update promotes set promote = 1 where id = ?", [promote["id"]])
+                try:
+                    await bot.delete_message(promote["delete_chat"], promote["delete_message"])
                 except:
                     pass
             except Exception as e:

@@ -96,6 +96,7 @@ class DB():
             logging.info("Creating table promotes")
             cur.execute("""create table promotes (
                             id integer primary key autoincrement,
+                            bond_id integer not null,
                             user_id bigint not null,
                             chat_id bigint not null,
                             delete_message int not null,

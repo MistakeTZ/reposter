@@ -119,9 +119,10 @@ async def check_sub(msg, bond, chat_type):
         mes = await msg.answer(sender.text("no_sub", user, chat_link), reply_markup=kb.no_sub(
                 "t.me/" + chat.username, bond["to_chat_id"], msg.from_user.id))
 
-        DB.commit("insert into promotes (user_id, chat_id, delete_message, \
-            delete_chat, chat_type) values (?, ?, ?, ?, ?)", [msg.from_user.id,
-            bond["to_chat_id"], mes.message_id, msg.chat.id, chat_type])
+        DB.commit("insert into promotes (bond_id, user_id, chat_id, delete_message, \
+            delete_chat, chat_type) values (?, ?, ?, ?, ?, ?)", [
+            bond["id"], msg.from_user.id, bond["to_chat_id"],
+            mes.message_id, msg.chat.id, chat_type])
 
     try:
         await msg.delete()
