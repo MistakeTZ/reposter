@@ -163,6 +163,8 @@ async def no_states(msg: Message, force=False):
         try:
             if not await check_sub(msg, bond, msg.chat.type):
                 continue
+            if not bond["to_chat_id"]:
+                continue
             message_text = msg.text
             if message_text:
                 if DB.get("select id from forwarded where text like ? and bond_id = ?",
