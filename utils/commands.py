@@ -61,22 +61,26 @@ async def command_settings(msg: Message, state: FSMContext) -> None:
 
 
 # Команда добавления админа
-@dp.message(Command("addadmin"))
+@dp.message(Command("role"))
 async def command_settings(msg: Message, state: FSMContext) -> None:
     user_id = msg.from_user.id
     if not str(user_id) in get_env("admins"):
         await sender.message(user_id, "not_allowed")
         return
-    if (len(msg.text.split()) == 2):
-        username = msg.text.split()[1]
-        if username.startswith("@"):
-            username = username[1:]
-        user = DB.get("select id from users where username like ?",
-                    [username], True)
-        if not user:
-            await sender.message(user_id, "not_found")
-            return
-        DB.commit("update users set role = ? where id = ?", ["admin", user[0]])
-        await sender.message(user_id, "admin_added")
-    else:
+    if len(msg.text.split()) == 1:
         await sender.message(user_id, "write_admin_id")
+        return
+    if len(msg.text.split()) == 3:
+        role = msg.text.split()[2]
+    else:
+        role = "admin"
+    username = msg.text.split()[1]
+    if username.startswith("@"):
+        username = username[1:]
+    user = DB.get("select id from users where username like ?",
+                [username], True)
+    if not user:
+        await sender.message(user_id, "not_found")
+        return
+    DB.commit("update users set role = ? where id = ?", [role, user[0]])
+    await sender.message(user_id, f"user_added")
