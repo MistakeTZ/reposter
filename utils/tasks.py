@@ -63,15 +63,8 @@ async def send_bond_info(bond_id, user_id, mes_id):
 
 
 async def add_chat(chat_id, user_id):
-    try:
-        mes = await bot.send_message(chat_id, "Добавление чата...")
-        await mes.delete()
-        chat = mes.chat
-        title = chat.first_name
-    except Exception as e:
-        logging.debug(e)
-        chat = await bot.get_chat(chat_id)
-        title = chat.title
+    chat = await bot.get_chat(chat_id)
+    title = chat.title
     in_channels = DB.get("select id from channels where \
                          chat_id = ?", [chat.id], True)
     if not in_channels:

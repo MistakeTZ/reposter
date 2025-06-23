@@ -103,7 +103,9 @@ async def bond_handler(msg: Message, state: FSMContext):
                 try:
                     if msg.from_user.username in chat_id:
                         chat_id = msg.from_user.id
-                    chat_id, chat_name = await add_chat(chat_id, user_id)
+                        chat_name = msg.from_user.first_name
+                    else:
+                        chat_id, chat_name = await add_chat(chat_id, user_id)
                 except Exception as e:
                     logging.debug(e)
                     await bot.edit_message_text(sender.text("bot_not_in_chat"),
