@@ -88,6 +88,8 @@ class DB():
                             id integer primary key autoincrement,
                             bond_id integer not null,
                             text text,
+                            user_id integer not null,
+                            chat_id integer not null,
                             mes_id integer not null,
                             registered timestamp default current_timestamp
                             )""")

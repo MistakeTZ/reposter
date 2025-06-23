@@ -6,7 +6,7 @@ from loader import dp, bot, sender
 import logging
 import asyncio
 from os import path
-from datetime import datetime, timedelta, timezone
+from datetime import date
 
 from config import get_env, get_config
 import utils.kb as kb
@@ -125,3 +125,30 @@ async def sub_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     except Exception as e:
         logging.debug(e)
     await clbck.answer(sender.text("sub_dont"))
+
+
+# Вывод статистики
+@dp.callback_query(F.data.startswith("stat_"))
+async def stat_handler(clbck: CallbackQuery, state: FSMContext) -> None:
+    user_id = clbck.from_user.id
+    bond_id = clbck.data.split("_")[1]
+    bond_stat = DB.get("select today_sub, total_sub from stats \
+                            where id = ?", [bond_id], True)
+    if not bond_stat:
+        DB.commit("insert into stats (bond_id) values (?)", [bond_id])
+        bond_stat = DB.get("select today_sub, total_sub from \
+                                stats where id = ?", [bond_id], True)
+
+    total_count = DB.get("select count(*) from forwarded where bond_id = ?", [bond_id], True)[0]
+    today_count = DB.get("select count(*) from forwarded where \
+        strftime('%d', datetime('now')) = strftime('%d', registered) and \
+        bond_id = ?", [bond_id], True)[0]
+    bond_name = DB.get("select name from bonds where id = ?", [bond_id], True)[0]
+    unique_users = DB.get("select count(*) from forwarded where bond_id = ?\
+                    group by user_id", [bond_id], True)
+    if not unique_users: unique_users = 0
+    else: unique_users = unique_users[0]
+
+    await clbck.message.edit_text(sender.text("bond_stat", bond_name,
+        total_count, today_count, bond_stat[1], bond_stat[0], unique_users),
+                    reply_markup=kb.buttons(True, "back", f"bond_{bond_id}"))

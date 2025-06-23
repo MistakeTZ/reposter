@@ -113,7 +113,8 @@ def bonds(bonds) -> InlineKeyboardMarkup:
 
 # Клавиатура связки
 def bond(bond_id) -> InlineKeyboardMarkup:
-    return buttons(True, "set_name", f"edit_name_{bond_id}", "set_from",
+    return buttons(True, "look_stat", f"stat_{bond_id}", 
+                   "set_name", f"edit_name_{bond_id}", "set_from",
                    f"edit_from_{bond_id}", "set_to", f"edit_to_{bond_id}",
                    "set_keywords", f"edit_keywords_{bond_id}", "set_text",
                    f"edit_text_{bond_id}", "set_status",
