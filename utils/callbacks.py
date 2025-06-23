@@ -68,16 +68,15 @@ async def edit_handler(clbck: CallbackQuery, state: FSMContext) -> None:
                         reply_markup=kb.buttons(True, "back", "menu"))
     elif action in ["from", "to"]: # TODO button
         chats = DB.get_dict("select * from channels where owner = ?", [user_id])
+        me = await bot.get_me()
         if chats:
-            chat_data = []
-            for chat in chats:
-                chat_data.extend([chat["name"], 
-                                f"edit_id{chat['id']}_{bond_id}"])
             await clbck.message.edit_text(sender.text(f"write_{action}_ex"),
-                reply_markup=kb.buttons(False, *chat_data, sender.text("back"), "menu"))
+                reply_markup=kb.add_to_chat(chats, bond_id, me.username,
+                    f"add_{action}_{bond_id}_{clbck.message.message_id}"))
         else:
             await clbck.message.edit_text(sender.text(f"write_{action}_no"),
-                reply_markup=kb.buttons(True, "back", "menu"))
+                reply_markup=kb.add_to_chat(chats, bond_id, me.username,
+                    f"add_{action}_{bond_id}_{clbck.message.message_id}"))
     elif action in ["status", "contacts", "silence", "sub"]:
         field = ["active", "check_for_contacts", "silence", "check_sub"][[
             "status", "contacts", "silence", "sub"].index(action)]

@@ -133,3 +133,15 @@ def no_sub(link, chat_id, user_id) -> InlineKeyboardMarkup:
                              callback_data=f"sub_{chat_id}_{user_id}")
     ]]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def add_to_chat(chats, bond_id, my_username, data):
+    buttons = []
+    buttons.append([InlineKeyboardButton(text="Добавить в чат", url=
+        f"https://t.me/{my_username}?startgroup={data}&admin=delete_messages+restrict_members")])
+    for chat in chats:
+        buttons.append([InlineKeyboardButton(text=chat["name"],
+                        callback_data=f"edit_id{chat['id']}_{bond_id}")])
+    buttons.append([InlineKeyboardButton(text=sender.text("back"),
+                                callback_data="menu")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

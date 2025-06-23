@@ -12,12 +12,32 @@ from config import get_env, get_config
 import utils.kb as kb
 from states import UserState
 from database.model import DB
+from .tasks import send_bond_info
 
 
 # Команда старта бота
 @dp.message(CommandStart())
 async def command_start_handler(msg: Message, state: FSMContext) -> None:
     user_id = msg.from_user.id
+    if len(msg.text.split()) > 1:
+        data = msg.text.split()[1]
+        if data.startswith("add"):
+            await msg.delete()
+
+            action, bond_id, message = data.split("_")[1:]
+            chat = msg.chat
+            if not DB.get_dict("select * from channels where chat_id = ? \
+                            and owner = ?", [chat.id, user_id], True):
+                DB.commit("insert into channels (chat_id, name, \
+                    username, owner) values (?, ?, ?, ?)", [chat.id,
+                    chat.title, chat.username, user_id])
+
+            DB.commit(f"update bonds set {action}_chat_name = ?, \
+                {action}_chat_id = ? where id = ?", [chat.title,
+                chat.id, int(bond_id)])
+            await send_bond_info(bond_id, user_id, message)
+            return
+
     if not DB.get("select id from users where telegram_id = ?", [user_id]):
         print("New user:", user_id)
         DB.commit("insert into users (telegram_id, name, username, registered) values (?, ?, ?, ?)", 
