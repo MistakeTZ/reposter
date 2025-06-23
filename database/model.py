@@ -69,7 +69,7 @@ class DB():
                             registered timestamp default current_timestamp
                             )""")
 
-        if not "stats" in tables:
+        if not "stats" in tables: # TODO realize stat
             logging.info("Creating table stats")
             cur.execute("""create table stats (
                             id integer primary key autoincrement,

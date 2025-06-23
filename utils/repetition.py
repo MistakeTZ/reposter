@@ -33,7 +33,7 @@ async def send_messages():
             except Exception as e:
                 logging.warning(e)
         
-        promotes = DB.get("select * from promotes where registered < ? and promote = 0",
+        promotes = DB.get_dict("select * from promotes where registered < ? and promote = 0",
                           [datetime.now(timezone.utc) - timedelta(minutes=10)])
         for promote in promotes:
             try:
