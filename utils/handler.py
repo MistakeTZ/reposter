@@ -168,6 +168,7 @@ async def no_states(msg: Message, force=False):
                 continue
             if not bond["to_chat_id"]:
                 continue
+            await check_to_edit(msg.from_user.id)
             message_text = msg.text
             if message_text:
                 if DB.get("select id from forwarded where text like ? and bond_id = ?",
@@ -276,6 +277,21 @@ async def no_states(msg: Message, force=False):
                                 None, msg.chat.title, e)
 
 
+async def check_to_edit(user_id):
+    for key in message_to_edit.keys():
+        if message_to_edit[key][1].from_user.id == user_id:
+            try:
+                await message_to_edit[key][0].delete()
+            except:
+                pass
+            try:
+                await message_to_edit[key][1].delete()
+            except:
+                pass
+            del message_to_edit[key]
+            return
+
+
 async def send_media_group(media_group_id, bond):
     group = media_groups[media_group_id]
     media = []
@@ -322,14 +338,14 @@ async def send_media_group(media_group_id, bond):
 async def edited_handler(msg: Message):
     if message_to_edit.get(msg.message_id, None):
         try:
-            await message_to_edit[msg.message_id].delete()
+            await message_to_edit[msg.message_id][0].delete()
         except Exception as e:
             logging.warning(e)
         del message_to_edit[msg.message_id]
         await no_states(msg)
     elif message_to_edit.get(msg.media_group_id, None):
         try:
-            await message_to_edit[msg.media_group_id].delete()
+            await message_to_edit[msg.media_group_id][0].delete()
         except Exception as e:
             logging.warning(e)
         del message_to_edit[msg.media_group_id]
@@ -350,7 +366,7 @@ async def send_caution(msg, key=None):
     ans = await msg.answer(sender.text("your_message_no_bio", user))
     if not key:
         key = msg.message_id
-    message_to_edit[key] = ans
+    message_to_edit[key] = [ans, msg]
 
     await asyncio.sleep(60 * 10)
     try:

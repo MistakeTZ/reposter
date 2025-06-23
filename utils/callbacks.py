@@ -66,7 +66,7 @@ async def edit_handler(clbck: CallbackQuery, state: FSMContext) -> None:
     if action in ["text", "keywords", "name"]:
         await clbck.message.edit_text(sender.text(f"write_{action}"),
                         reply_markup=kb.buttons(True, "back", "menu"))
-    elif action in ["from", "to"]:
+    elif action in ["from", "to"]: # TODO button
         chats = DB.get_dict("select * from channels where owner = ?", [user_id])
         if chats:
             chat_data = []
