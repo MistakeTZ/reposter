@@ -78,8 +78,9 @@ async def edit_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         else:
             await clbck.message.edit_text(sender.text(f"write_{action}_no"),
                 reply_markup=kb.buttons(True, "back", "menu"))
-    elif action in ["status", "contacts", "sub"]:
-        field = ["active", "check_for_contacts", "check_sub"][["status", "contacts", "sub"].index(action)]
+    elif action in ["status", "contacts", "silence", "sub"]:
+        field = ["active", "check_for_contacts", "silence", "check_sub"][[
+            "status", "contacts", "silence", "sub"].index(action)]
         bond_status = DB.get(f"select {field} from bonds where \
                         id = ?", [int(bond_id)], True)[0]
         DB.commit(f"update bonds set {field} = ? where \

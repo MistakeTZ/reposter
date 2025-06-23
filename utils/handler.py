@@ -184,7 +184,8 @@ async def no_states(msg: Message, force=False):
                 else:
                     send_text = message_text
                 await bot.send_message(bond["to_chat_id"], send_text,
-                                       entities=msg.entities, parse_mode=None)
+                                       entities=msg.entities, parse_mode=None,
+                                       disable_notification=bond["silence"])
                 DB.commit("insert into forwarded (bond_id, text, mes_id) \
                             values (?, ?, ?)", [bond["id"],
                             message_text, msg.message_id])
@@ -217,16 +218,20 @@ async def no_states(msg: Message, force=False):
                     send_text = msg.caption
                 if msg.photo:
                     await bot.send_photo(bond["to_chat_id"], msg.photo[-1].file_id,
-                                        caption=send_text, parse_mode=None)
+                                        caption=send_text, parse_mode=None,
+                                       disable_notification=bond["silence"])
                 elif msg.video:
                     await bot.send_video(bond["to_chat_id"], msg.video.file_id,
-                                        caption=send_text, parse_mode=None)
+                                        caption=send_text, parse_mode=None,
+                                       disable_notification=bond["silence"])
                 elif msg.document:
                     await bot.send_document(bond["to_chat_id"], msg.document.file_id,
-                                            caption=send_text, parse_mode=None)
+                                            caption=send_text, parse_mode=None,
+                                            disable_notification=bond["silence"])
                 elif msg.audio:
                     await bot.send_audio(bond["to_chat_id"], msg.audio.file_id,
-                                        caption=send_text, parse_mode=None)
+                                        caption=send_text, parse_mode=None,
+                                        disable_notification=bond["silence"])
                 DB.commit("insert into forwarded (bond_id, text, mes_id) \
                             values (?, ?, ?)", [bond["id"],
                             msg.caption, msg.message_id])
@@ -248,16 +253,20 @@ async def no_states(msg: Message, force=False):
                     continue
                 if msg.photo:
                     await bot.send_photo(bond["to_chat_id"], msg.photo[-1].file_id,
-                                        caption=bond["add_text"])
+                                        caption=bond["add_text"],
+                                        disable_notification=bond["silence"])
                 elif msg.video:
                     await bot.send_video(bond["to_chat_id"], msg.video.file_id,
-                                        caption=bond["add_text"])
+                                        caption=bond["add_text"],
+                                        disable_notification=bond["silence"])
                 elif msg.document:
                     await bot.send_document(bond["to_chat_id"], msg.document.file_id,
-                                            caption=bond["add_text"])
+                                            caption=bond["add_text"],
+                                            disable_notification=bond["silence"])
                 elif msg.audio:
                     await bot.send_audio(bond["to_chat_id"], msg.audio.file_id,
-                                        caption=bond["add_text"])
+                                        caption=bond["add_text"],
+                                        disable_notification=bond["silence"])
                 DB.commit("insert into forwarded (bond_id, mes_id) \
                             values (?, ?)", [bond["id"], msg.message_id])
         except Exception as e:
@@ -305,7 +314,7 @@ async def send_media_group(media_group_id, bond):
     media[-1].caption = text
     media[-1].caption_entities = entities
     media[-1].parse_mode = None
-    await bot.send_media_group(bond["to_chat_id"], media)
+    await bot.send_media_group(bond["to_chat_id"], media, disable_notification=bond["silence"])
 
 
 @dp.edited_message()
