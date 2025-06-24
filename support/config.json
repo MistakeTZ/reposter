@@ -3,7 +3,7 @@
         "list",
         "role",
         "ban",
-        "unban",
+        "banre",
         "db",
         "mail"
     ]

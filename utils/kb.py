@@ -147,8 +147,9 @@ def add_to_chat(chats, bond_id, my_username, data):
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
-def user_table(data):
-    users = DB.get_dict(f"select * from users")
+def user_table(data, restricted=False):
+    users = DB.get_dict(f"select * from users where \
+                        restricted = ?", [restricted])
     buttons = []
 
     for i, user in enumerate(users):

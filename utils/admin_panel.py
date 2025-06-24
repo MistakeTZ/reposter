@@ -129,3 +129,19 @@ async def role_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         user = data[3]
         DB.commit("update users set role = ? where id = ?", [role, user])
         await sender.edit_message(clbck.message, f"role_updated", kb.buttons(True, "admin"))
+
+
+# Бан пользователя
+@dp.callback_query(F.data.startswith("admin_ban"))
+async def ban_handler(clbck: CallbackQuery, state: FSMContext) -> None:
+    data = clbck.data.split("_")
+    if len(data) == 2:
+        is_ban = data[1] == "ban"
+        await sender.edit_message(clbck.message, "choose_user",
+                        kb.user_table(clbck.data, not is_ban))
+    else:
+        user = data[2]
+        is_ban = data[1] == "ban"
+        DB.commit("update users set restricted = ? where id = ?", [is_ban, user])
+        await sender.edit_message(clbck.message, f"user_banned" if is_ban
+                            else "user_unbanned", kb.buttons(True, "admin"))
