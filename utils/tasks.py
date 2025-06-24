@@ -4,7 +4,7 @@ from database.model import DB
 import logging
 from aiogram.utils.markdown import hlink
 from aiogram.types import ChatPermissions
-import time
+from config import get_env
 
 
 async def send_menu(user_id, name):
@@ -13,9 +13,11 @@ async def send_menu(user_id, name):
         await sender.message(user_id, "start_message", None,
             name, sender.text("no_rights"))
     else:
-        await sender.message(user_id, "start_message", kb.table(2,
-            "crosspost", "bond_list",
-            is_keys=True), name, sender.text("menu"))
+        if str(user_id) in get_env("admins"):
+            reply = kb.table(2, "crosspost", "bond_list", "panel", "admin", is_keys=True)
+        else:
+            reply = kb.table(2, "crosspost", "bond_list", is_keys=True)
+        await sender.message(user_id, "start_message", reply, name, sender.text("menu"))
 
 
 async def edit_menu(user_id, name, mes):
@@ -24,9 +26,11 @@ async def edit_menu(user_id, name, mes):
         await sender.edit_message(mes, "start_message", None,
             name, sender.text("no_rights"))
     else:
-        await sender.edit_message(mes, "start_message", kb.table(2,
-            "crosspost", "bond_list",
-            is_keys=True), name, sender.text("menu"))
+        if str(user_id) in get_env("admins"):
+            reply = kb.table(2, "crosspost", "bond_list", "panel", "admin", is_keys=True)
+        else:
+            reply = kb.table(2, "crosspost", "bond_list", is_keys=True)
+        await sender.edit_message(mes, "start_message", reply, name, sender.text("menu"))
 
 
 async def send_bond_info(bond_id, user_id, mes_id):
