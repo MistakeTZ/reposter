@@ -110,3 +110,22 @@ async def mailing_handler(clbck: CallbackQuery, state: FSMContext) -> None:
         message += "\n"
     
     await sender.edit_message(clbck.message, "users", kb.buttons(True, "admin"), message)
+
+
+# Изменение роли
+@dp.callback_query(F.data.startswith("admin_role"))
+async def role_handler(clbck: CallbackQuery, state: FSMContext) -> None:
+    user_id = clbck.from_user.id
+    data = clbck.data.split("_")
+    if len(data) == 2:
+        await sender.edit_message(clbck.message, "choose_role", kb.table(2,
+            "new_admin", "admin_role_admin", "new_user", "admin_role_user",
+            "admin", "admin", is_keys=True))
+        return
+    elif len(data) == 3:
+        await sender.edit_message(clbck.message, "choose_user", kb.user_table(clbck.data))
+    else:
+        role = data[2]
+        user = data[3]
+        DB.commit("update users set role = ? where id = ?", [role, user])
+        await sender.edit_message(clbck.message, f"role_updated", kb.buttons(True, "admin"))

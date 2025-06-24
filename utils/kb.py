@@ -4,7 +4,7 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
     KeyboardButton
 )
-from config import get_config, get_env
+from database.model import DB
 from loader import sender
 
 
@@ -144,4 +144,24 @@ def add_to_chat(chats, bond_id, my_username, data):
                         callback_data=f"edit_id{chat['id']}_{bond_id}")])
     buttons.append([InlineKeyboardButton(text=sender.text("back"),
                                 callback_data="menu")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def user_table(data):
+    users = DB.get_dict(f"select * from users")
+    buttons = []
+
+    for i, user in enumerate(users):
+        if i % 2 == 0:
+            buttons.append([])
+
+        name = user["name"]
+        if user["username"]:
+            name += f" (@{user['username']})"
+        
+        buttons[-1].append(InlineKeyboardButton(text=name,
+                        callback_data=f"{data}_{user['id']}"))
+    buttons.append([InlineKeyboardButton(text=sender.text("admin"),
+                                         callback_data="admin")])
+
     return InlineKeyboardMarkup(inline_keyboard=buttons)
