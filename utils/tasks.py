@@ -90,8 +90,6 @@ def check_keywords(text, keywords):
 
 
 def check_for_contacts(text, entities):
-    if not entities:
-        return False
     for entity in entities:
         if entity.type in ["text_link", "url", "mention", "phone_number", "email"]:
             return True

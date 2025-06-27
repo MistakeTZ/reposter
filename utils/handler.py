@@ -159,6 +159,8 @@ async def member_handler(msg: Message, state: FSMContext):
 # Сообщение без состояний
 @dp.message(NoStates())
 async def no_states(msg: Message, force=False):
+    if msg.from_user.is_bot:
+        return
     chat_id = msg.chat.id
     user_id = msg.from_user.id
     from_chat_bonds = DB.get_dict("select * from bonds where \
@@ -288,8 +290,8 @@ async def no_states(msg: Message, force=False):
                     msg.message_id, user_id, chat_id, bond["to_chat_id"]])
         except Exception as e:
             logging.warning(e)
-            await sender.message(bond["owner"], "cant_send_bond",
-                                None, msg.chat.title, e)
+            # await sender.message(bond["owner"], "cant_send_bond",
+            #                     None, msg.chat.title, e)
 
 
 async def check_to_edit(user_id):
