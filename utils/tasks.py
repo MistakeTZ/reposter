@@ -5,6 +5,7 @@ import logging
 from aiogram.utils.markdown import hlink
 from aiogram.types import ChatPermissions
 from config import get_env
+import re
 
 
 async def send_menu(user_id, name):
@@ -94,6 +95,38 @@ def check_for_contacts(text, entities):
     for entity in entities:
         if entity.type in ["text_link", "url", "mention", "phone_number", "email"]:
             return True
+
+    comprehensive_pattern = r'(?:(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4}))|(?:\+[1-9]\d{1,14})'
+    if re.search(comprehensive_pattern, text):
+        return True
+
+    # Or use the verbose version with the VERBOSE flag
+    comprehensive_pattern_verbose = r'''
+        (?:
+            (?:\+?1[-.\s]?)?          # Optional country code with separators
+            \(?([0-9]{3})\)?          # Area code with optional parentheses
+            [-.\s]?                   # Optional separator
+            ([0-9]{3})                # First 3 digits
+            [-.\s]?                   # Optional separator
+            ([0-9]{4})                # Last 4 digits
+        )
+        |
+        (?:
+            \+[1-9]\d{1,14}           # International format (E.164)
+        )
+    '''
+    if re.search(comprehensive_pattern_verbose, text, re.VERBOSE):
+        return True
+
+    # For your specific case with Russian number format
+    russian_pattern = r'\+7\s?\(?\d{3}\)?\s?\d{3}-?\d{2}-?\d{2}'
+    if re.search(russian_pattern, text):
+        return True
+
+    # More universal international pattern
+    international_pattern = r'\+\d{1,3}\s?\(?\d{1,4}\)?\s?[\d\s\-]{4,14}'
+    if re.search(international_pattern, text):
+        return True
     return False
 
 
