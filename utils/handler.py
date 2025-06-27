@@ -221,22 +221,27 @@ async def no_states(msg: Message, force=False):
                     send_text = msg.caption + "\n\n" + bond["add_text"]
                 else:
                     send_text = msg.caption
-                if msg.photo:
-                    await bot.send_photo(bond["to_chat_id"], msg.photo[-1].file_id,
-                                        caption=send_text, parse_mode=None,
-                                       disable_notification=bond["silence"])
-                elif msg.video:
-                    await bot.send_video(bond["to_chat_id"], msg.video.file_id,
-                                        caption=send_text, parse_mode=None,
-                                       disable_notification=bond["silence"])
-                elif msg.document:
-                    await bot.send_document(bond["to_chat_id"], msg.document.file_id,
+                try:
+                    if msg.photo:
+                        await bot.send_photo(bond["to_chat_id"], msg.photo[-1].file_id,
+                                            caption=send_text, parse_mode=None,
+                                        disable_notification=bond["silence"])
+                    elif msg.video:
+                        await bot.send_video(bond["to_chat_id"], msg.video.file_id,
+                                            caption=send_text, parse_mode=None,
+                                        disable_notification=bond["silence"])
+                    elif msg.document:
+                        await bot.send_document(bond["to_chat_id"], msg.document.file_id,
+                                                caption=send_text, parse_mode=None,
+                                                disable_notification=bond["silence"])
+                    elif msg.audio:
+                        await bot.send_audio(bond["to_chat_id"], msg.audio.file_id,
                                             caption=send_text, parse_mode=None,
                                             disable_notification=bond["silence"])
-                elif msg.audio:
-                    await bot.send_audio(bond["to_chat_id"], msg.audio.file_id,
-                                        caption=send_text, parse_mode=None,
-                                        disable_notification=bond["silence"])
+                except Exception as e:
+                    logging.warning(e)
+                    await bot.send_message(bond["to_chat_id"], send_text,
+                        parse_mode=None, disable_notification=bond["silence"])
                 DB.commit("insert into forwarded (bond_id, text, mes_id, \
                     user_id, chat_id, to_chat) values (?, ?, ?, ?, ?, ?)",
                     [bond["id"], msg.caption, msg.message_id, user_id,
@@ -257,22 +262,27 @@ async def no_states(msg: Message, force=False):
                     continue
                 if bond["keywords"]:
                     continue
-                if msg.photo:
-                    await bot.send_photo(bond["to_chat_id"], msg.photo[-1].file_id,
-                                        caption=bond["add_text"],
-                                        disable_notification=bond["silence"])
-                elif msg.video:
-                    await bot.send_video(bond["to_chat_id"], msg.video.file_id,
-                                        caption=bond["add_text"],
-                                        disable_notification=bond["silence"])
-                elif msg.document:
-                    await bot.send_document(bond["to_chat_id"], msg.document.file_id,
+                try:
+                    if msg.photo:
+                        await bot.send_photo(bond["to_chat_id"], msg.photo[-1].file_id,
                                             caption=bond["add_text"],
                                             disable_notification=bond["silence"])
-                elif msg.audio:
-                    await bot.send_audio(bond["to_chat_id"], msg.audio.file_id,
-                                        caption=bond["add_text"],
-                                        disable_notification=bond["silence"])
+                    elif msg.video:
+                        await bot.send_video(bond["to_chat_id"], msg.video.file_id,
+                                            caption=bond["add_text"],
+                                            disable_notification=bond["silence"])
+                    elif msg.document:
+                        await bot.send_document(bond["to_chat_id"], msg.document.file_id,
+                                                caption=bond["add_text"],
+                                                disable_notification=bond["silence"])
+                    elif msg.audio:
+                        await bot.send_audio(bond["to_chat_id"], msg.audio.file_id,
+                                            caption=bond["add_text"],
+                                            disable_notification=bond["silence"])
+                except Exception as e:
+                    logging.warning(e)
+                    await bot.send_message(bond["to_chat_id"], bond["add_text"],
+                        parse_mode=None, disable_notification=bond["silence"])
                 DB.commit("insert into forwarded (bond_id, mes_id, user_id, \
                     chat_id, to_chat) values (?, ?, ?, ?, ?)", [bond["id"],
                     msg.message_id, user_id, chat_id, bond["to_chat_id"]])
