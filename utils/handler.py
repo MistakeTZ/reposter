@@ -209,8 +209,8 @@ async def no_states(msg: Message, force=False):
                         await asyncio.sleep(1)
                         await send_media_group(msg.media_group_id, bond)
                         continue
-                if DB.get("select id from forwarded where text like ? and bond_id != ?",
-                          [msg.caption, bond["id"]], True):
+                if DB.get("select id from forwarded where text like ? and to_chat = ?",
+                          [msg.caption, bond["to_chat_id"]], True):
                     continue
                 if bond["check_for_contacts"]:
                     if not check_for_contacts(msg.caption, msg.caption_entities):

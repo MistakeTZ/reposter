@@ -7,6 +7,8 @@ from aiogram.types import ChatPermissions
 from config import get_env
 import re
 
+checked_media_group_ids = set()
+
 
 async def send_menu(user_id, name):
     role = DB.get("select role from users where telegram_id = ?", [user_id], True)[0]
@@ -143,6 +145,15 @@ async def check_sub(msg, bond, chat_type):
     except Exception as e:
         logging.debug(e)
     
+    if msg.media_group_id:
+        if msg.media_group_id in checked_media_group_ids:
+            try:
+                await msg.delete()
+            except:
+                pass
+            return False
+        checked_media_group_ids.add(msg.media_group_id)
+
     prev = DB.get("select id from promotes where user_id = ? and chat_id = ?",
         [msg.from_user.id, bond["to_chat_id"]], True)
     
@@ -161,6 +172,7 @@ async def check_sub(msg, bond, chat_type):
 
     try:
         await msg.delete()
-    except: pass
+    except:
+        pass
 
     return False
